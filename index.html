@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI의 사고 여정</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --deepgreen: #1a5c4a;
+            --deepgreen-light: #2d7a64;
+            --accent-orange: #d4542a;
+            --ivory: #faf9f4;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--ivory) 0%, #f5f3ed 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .viewport {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 네비게이션: 상단 */
+        .nav-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.7) 100%);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            border-bottom: 1px solid rgba(26, 92, 74, 0.08);
+        }
+
+        .nav-arrow {
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--deepgreen);
+            opacity: 0.6;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .nav-arrow:hover {
+            opacity: 1;
+            transform: translateY(-2px);
+        }
+
+        .nav-arrow.disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+        }
+
+        .page-indicator {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--deepgreen);
+            letter-spacing: 0.5px;
+        }
+
+        /* 페이지 컨테이너 */
+        .pages-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            padding-top: 60px;
+            padding-bottom: 80px;
+        }
+
+        .page {
+            width: 100%;
+            height: calc(100vh - 140px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.25rem;
+            position: absolute;
+            top: 60px;
+            left: 0;
+            opacity: 0;
+            pointer-events: none;
+            animation: slideOut 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .page.active {
+            opacity: 1;
+            pointer-events: auto;
+            animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        /* 페이지 전환 애니메이션 */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+        }
+
+        /* 타이틀 페이지 */
+        .title-page {
+            background: linear-gradient(135deg, var(--deepgreen) 0%, var(--deepgreen-light) 100%);
+            padding: 2rem 1.5rem;
+        }
+
+        .title-page h1 {
+            font-size: 48px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+            letter-spacing: -1px;
+            border: 3px solid rgba(250, 249, 244, 0.8);
+            border-radius: 12px;
+            padding: 1.5rem 1.75rem;
+            box-shadow: 0 0 30px rgba(212, 84, 42, 0.4), 0 0 60px rgba(212, 84, 42, 0.2), inset 0 0 20px rgba(250, 249, 244, 0.1);
+            text-shadow: 0 0 20px rgba(212, 84, 42, 0.6), 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .title-page p {
+            font-size: 18px;
+            color: rgba(250, 249, 244, 0.9);
+            line-height: 1.7;
+            letter-spacing: 0.3px;
+            max-width: 320px;
+        }
+
+        .title-page .emoji-icon {
+            font-size: 64px;
+            margin-bottom: 2rem;
+            display: inline-block;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+
+        /* 콘텐츠 카드 */
+        .card {
+            background: white;
+            border: 2px solid var(--deepgreen);
+            border-left: 8px solid var(--accent-orange);
+            border-radius: 16px;
+            padding: 2.5rem 1.75rem;
+            max-width: 360px;
+            width: 100%;
+            box-shadow: 0 8px 24px rgba(26, 92, 74, 0.12);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 카드가 활성화될 때만 애니메이션 */
+        .page.active .card {
+            animation: scaleGlow 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes scaleGlow {
+            from {
+                opacity: 0;
+                transform: scale(0.85);
+                box-shadow: 0 0 0px rgba(212, 84, 42, 0), 0 0 0px rgba(212, 84, 42, 0);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+                box-shadow: 0 12px 36px rgba(212, 84, 42, 0.25), 0 0 40px rgba(212, 84, 42, 0.2);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+                box-shadow: 0 8px 24px rgba(26, 92, 74, 0.12), 0 0 30px rgba(212, 84, 42, 0.15);
+            }
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, rgba(212, 84, 42, 0.08) 0%, rgba(26, 92, 74, 0.04) 100%);
+            border-radius: 50%;
+            transform: translate(30px, -30px);
+            pointer-events: none;
+        }
+
+        .emoji-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1.25rem;
+            display: inline-block;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.15);
+                opacity: 0.85;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        h2 {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--deepgreen);
+            margin-bottom: 1.5rem;
+            line-height: 1.3;
+            letter-spacing: -0.5px;
+        }
+
+        .content {
+            font-size: 15px;
+            line-height: 1.9;
+            color: #333;
+            white-space: pre-line;
+            position: relative;
+            z-index: 1;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, rgba(212, 84, 42, 0.15) 0%, rgba(212, 84, 42, 0.08) 100%);
+            color: var(--accent-orange);
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline;
+        }
+
+        .highlight-green {
+            color: var(--deepgreen);
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-top: 1.25rem;
+            font-style: italic;
+            line-height: 1.6;
+        }
+
+        .cta-section {
+            background: linear-gradient(135deg, rgba(26, 92, 74, 0.05) 0%, rgba(212, 84, 42, 0.03) 100%);
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, var(--deepgreen) 0%, var(--deepgreen-light) 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 1.5rem;
+            width: 100%;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 12px rgba(26, 92, 74, 0.2);
+            letter-spacing: 0.5px;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(26, 92, 74, 0.3);
+        }
+
+        .cta-button:active {
+            transform: translateY(-1px);
+        }
+
+        .input-wrapper {
+            display: none;
+            margin-top: 1.5rem;
+            animation: slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .input-wrapper.active {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 14px;
+            border: 2px solid var(--deepgreen);
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 15px;
+            resize: vertical;
+            line-height: 1.7;
+            color: #333;
+            background: #fafaf8;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-orange);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(212, 84, 42, 0.1);
+        }
+
+        textarea::placeholder {
+            color: #999;
+        }
+
+        .success-message {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(26, 92, 74, 0.12) 0%, rgba(26, 92, 74, 0.06) 100%);
+            color: var(--deepgreen);
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid rgba(26, 92, 74, 0.3);
+            animation: slideDown 0.4s ease;
+            line-height: 1.8;
+            font-weight: 600;
+        }
+
+        .success-message.active {
+            display: block;
+        }
+
+        /* 네비게이션: 하단 */
+        .nav-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 1.5rem;
+            background: linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.95) 100%);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            border-top: 1px solid rgba(26, 92, 74, 0.08);
+        }
+
+        /* 진행률 바 */
+        .progress-bar {
+            width: 200px;
+            height: 3px;
+            background: rgba(26, 92, 74, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--deepgreen) 0%, var(--accent-orange) 100%);
+            border-radius: 2px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 페이지 제어 */
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            justify-content: center;
+        }
+
+        .nav-controls .nav-arrow {
+            font-size: 20px;
+        }
+
+        .page-counter {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--deepgreen);
+            min-width: 50px;
+            text-align: center;
+            letter-spacing: 0.3px;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 2rem 1.25rem;
+            }
+
+            h2 {
+                font-size: 24px;
+            }
+
+            .content {
+                font-size: 14px;
+                line-height: 1.8;
+            }
+
+            .emoji-icon {
+                font-size: 3rem;
+            }
+
+            .title-page h1 {
+                font-size: 42px;
+            }
+
+            .title-page p {
+                font-size: 16px;
+            }
+
+            .progress-bar {
+                width: 120px;
+            }
+
+            .page-indicator {
+                font-size: 12px;
+            }
+
+            .nav-arrow {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="viewport">
+        <!-- 상단 네비게이션 -->
+        <div class="nav-top">
+            <div class="nav-arrow" id="navUpTop" onclick="previousPage()">▲</div>
+            <div class="page-indicator"><span id="currentPageTop">1</span> / 13</div>
+            <div class="nav-arrow" id="navDownTop" onclick="nextPage()">▼</div>
+        </div>
+
+        <!-- 페이지 컨테이너 -->
+        <div class="pages-container" id="pagesContainer">
+            <!-- 페이지 1: 타이틀 페이지 -->
+            <div class="page active title-page" data-page="1">
+                <div>
+                    <div class="emoji-icon">🚀</div>
+                    <h1>AI의 사고 여정</h1>
+                    <p>이 이야기는 생각의 시작에서<br>현실화까지의 12가지 순간입니다</p>
+                </div>
+            </div>
+
+            <!-- 페이지 2: 후킹 -->
+            <div class="page" data-page="2">
+                <div class="card">
+                    <div class="emoji-icon">📥</div>
+                    <h2>읽는 보고에서<br><span class="highlight-green">이해되는 보고로</span></h2>
+                    <div class="content">오늘 정말 보기 싫은 파일 두 개를 받았습니다.
+
+대학병원에 보냈던 임상 연구 계획서와
+병원에서 수정해서 다시 보내온 임상 연구 계획서.
+
+미션은 단순했습니다.
+
+<span class="highlight">"두 문서를 비교해서
+병원 측에서 무엇을 수정했는지 알려주세요."</span></div>
+                    <p class="subtitle">AI로 보고서를 예쁘게 만든 이야기가 아니라, 보고 방식을 다시 고민해본 하루의 기록입니다.</p>
+                </div>
+            </div>
+
+            <!-- 페이지 3: 문제 상황 -->
+            <div class="page" data-page="3">
+                <div class="card">
+                    <div class="emoji-icon">📄</div>
+                    <h2>단순한 요청 같았지만</h2>
+                    <div class="content">문서는 분명 한국말이었습니다.
+
+그런데 의료진이 아닌 제가 보기에는
+한국말인데도 <span class="highlight">쉽게 이해되지 않는 문서</span>였습니다.
+
+이걸 두 개 놓고
+틀린 그림 찾기처럼 수정사항을 찾아야 했습니다.
+
+예전 같았으면
+그냥 엑셀 표를 만들었을 겁니다.
+
+<span class="highlight-green">수정 전. 수정 후. 변경 내용.</span>
+
+그런데 이번엔 마음이 조금 달랐습니다.</div>
+                </div>
+            </div>
+
+            <!-- 페이지 4: 진짜 고민 -->
+            <div class="page" data-page="4">
+                <div class="card">
+                    <div class="emoji-icon">🤔</div>
+                    <h2>출근하면서 계속<br>한 가지를 생각했습니다</h2>
+                    <div class="content"><span class="highlight">"내가 경영진이라면
+이걸 어떤 형태로 받아야
+질문 없이 이해할 수 있을까?"</span>
+
+경영진은 대부분 외부 미팅과 이동이 많습니다.
+
+워드나 엑셀을 아무리 잘 만들어도
+이동 중에 작은 화면으로 보는 경우가 많습니다.
+
+그렇다면 중요한 건
+자료를 얼마나 많이 정리했느냐가 아니라,
+
+<span class="highlight">한눈에 무엇이 달라졌고
+무엇을 판단해야 하는지 보이는 구조</span>였습니다.</div>
+                </div>
+            </div>
+
+            <!-- 페이지 5: Before -->
+            <div class="page" data-page="5">
+                <div class="card">
+                    <div class="emoji-icon">📊</div>
+                    <h2>처음에는 익숙한<br>방식으로 시작했습니다</h2>
+                    <div class="content">엑셀에 표를 만들고
+수정 전과 수정 후를 정리했습니다.
+
+그런데 문제가 있었습니다.
+
+<span class="highlight-green">"나라면 이걸 보고 싶을까?"</span>
+
+<span class="highlight">핵심이 한눈에 들어오지 않았기 때문입니다.</span></div>
+                </div>
+            </div>
+
+            <!-- 페이지 6: 관점 전환 -->
+            <div class="page" data-page="6">
+                <div class="card">
+                    <div class="emoji-icon">✨</div>
+                    <h2>그때 생각이<br><span class="highlight-green">바뀌었습니다</span></h2>
+                    <div class="content">오늘의 미션은
+문서 비교가 아니라,
+
+<span class="highlight">비교 결과를
+어떻게 이해 가능한 형태로 전달할 것인가</span>였습니다.
+
+보고서는 작성자의 성실함을 보여주는 문서가 아니라
+<span class="highlight-green">받는 사람이 덜 힘들게 판단하도록 돕는 구조</span>여야 한다고 생각했습니다.</div>
+                </div>
+            </div>
+
+            <!-- 페이지 7: AI 총동원 -->
+            <div class="page" data-page="7">
+                <div class="card">
+                    <div class="emoji-icon">🤖</div>
+                    <h2>그래서 AI들을<br>열었습니다</h2>
+                    <div class="content"><span class="highlight-green">GPT, Gemini, Perplexity,
+NotebookLM 등 여러 AI를 활용했습니다.</span>
+
+같은 질문을 던지고
+각각의 답변을 비교했습니다.
+
+<span class="highlight">모든 AI가 완벽하지는 않았습니다.</span>
+
+그래서 하나만 믿지 않고
+<span class="highlight-green">서로의 결과를 검토했습니다.</span></div>
+                </div>
+            </div>
+
+            <!-- 페이지 8: 기준선 만들기 -->
+            <div class="page" data-page="8">
+                <div class="card">
+                    <div class="emoji-icon">⚖️</div>
+                    <h2>기준선을 만들기</h2>
+                    <div class="content">제 기준에서는 <span class="highlight-green">GPT가 가장 안정적</span>으로 정리해주었습니다.
+
+그래서 GPT를 기준선으로 두고
+다른 AI들이 준 결과 중
+중복은 제외하고
+추가할 만한 내용은 다시 반영했습니다.
+
+AI를 하나만 쓰는 것이 아니라
+<span class="highlight">AI끼리 서로 검토하게 하는 방식</span>으로 접근했습니다.</div>
+                </div>
+            </div>
+
+            <!-- 페이지 9: After -->
+            <div class="page" data-page="9">
+                <div class="card">
+                    <div class="emoji-icon">🎨</div>
+                    <h2>결과는 엑셀로만<br>끝내지 않았습니다</h2>
+                    <div class="content"><span class="highlight">Claude를 활용해
+웹페이지 형태의 보고서로 바꾸었습니다.</span>
+
+핵심 내용은 모바일에서 바로 보고,
+상세 비교표는 필요할 때 다운로드할 수 있도록 구성했습니다.
+
+제가 만들고 싶었던 건
+<span class="highlight-green">화려한 결과물이 아니라,
+
+이동 중에도
+무엇이 달라졌는지
+무엇을 봐야 하는지
+바로 이해되는 구조</span>였습니다.</div>
+                </div>
+            </div>
+
+            <!-- 페이지 10: 오늘의 깨달음 -->
+            <div class="page" data-page="10">
+                <div class="card">
+                    <div class="emoji-icon">💡</div>
+                    <h2>저는 코드를<br>모릅니다</h2>
+                    <div class="content">하지만 이제는
+<span class="highlight">모든 것을 직접 코딩해야만 결과물을 만들 수 있는 시대는 아닌 것</span> 같습니다.
+
+중요한 건
+어떤 도구를 썼느냐보다
+
+<span class="highlight-green">내가 무엇을 불편하게 느꼈고,
+무엇을 바꾸고 싶었고,
+어떤 방식으로 상대방이 더 쉽게 이해하도록 만들었는가</span>였습니다.</div>
+                </div>
+            </div>
+
+            <!-- 페이지 11: 독자에게 남기는 질문 -->
+            <div class="page" data-page="11">
+                <div class="card">
+                    <div class="emoji-icon">❓</div>
+                    <h2>그 질문 하나가<br>오늘을 어제와<br>다르게 만듭니다</h2>
+                    <div class="content">이 글은 <span class="highlight">"AI로 이런 걸 만들 수 있습니다"</span>를 보여주려는 글이 아닙니다.
+
+오늘 하루, 하나의 업무 앞에서 어떻게 고민했는지를 남기는 기록입니다.
+
+여러분도 오늘, 각자의 일상 안에서 불편하게 느끼는 장면이 하나쯤 있을 겁니다.
+
+그때 한 번만 물어보세요.
+
+<span class="highlight">"이걸 받는 사람은 어떻게 이해할까?"
+"내가 조금 다르게 바꿀 수 있는 지점은 뭘까?"</span></div>
+                </div>
+            </div>
+
+            <!-- 페이지 12: 마지막 문장 -->
+            <div class="page" data-page="12">
+                <div class="card">
+                    <div class="emoji-icon">🌟</div>
+                    <h2>좋은 결과물보다<br>중요한 것</h2>
+                    <div class="content">좋은 결과물보다 중요한 건
+<span class="highlight">고민의 방향이 바뀌는 순간</span>일지도 모릅니다.
+
+AI는 그 순간을
+<span class="highlight-green">조금 더 빠르게 현실로 옮겨주는 도구</span>였습니다.</div>
+                </div>
+            </div>
+
+            <!-- 페이지 13: CTA -->
+            <div class="page" data-page="13">
+                <div class="cta-section" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 2rem 1.25rem;">
+                    <div class="card">
+                        <div class="emoji-icon">📝</div>
+                        <h2 style="text-align: center;">오늘 나의 문제 하나를<br><span class="highlight-green">다시 바라보기</span></h2>
+                        <div class="content" style="text-align: center; margin-bottom: 0;">당신도 오늘
+각자의 일상과 업무 안에서
+<span class="highlight">불편하게 느끼는 장면</span>이 있을 거라고 생각합니다.
+
+그 문제를 기록해보세요.</div>
+
+                        <button class="cta-button" onclick="toggleInput()">시작하기</button>
+
+                        <div class="input-wrapper" id="inputWrapper">
+                            <textarea id="problemText" placeholder="당신의 문제를 자유롭게 써보세요. 불편함, 고민, 바꾸고 싶은 것..."></textarea>
+                            <button class="cta-button" onclick="saveProblem()">기록 완료</button>
+                        </div>
+
+                        <div class="success-message" id="successMessage">
+                            <strong>✓ 기록되었습니다.</strong><br><br>
+                            나중에 다시 와서<br>
+                            이 문제가 어떻게 변했는지<br>
+                            봐보세요.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 하단 네비게이션 -->
+        <div class="nav-bottom">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="nav-controls">
+                <div class="nav-arrow" id="navUpBottom" onclick="previousPage()">▲</div>
+                <div class="page-counter"><span id="currentPageBottom">1</span> / 13</div>
+                <div class="nav-arrow" id="navDownBottom" onclick="nextPage()">▼</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        const totalPages = 13;
+        let touchStartY = 0;
+        let touchEndY = 0;
+
+        // 페이지 변경 함수
+        function goToPage(pageNum) {
+            if (pageNum < 1 || pageNum > totalPages) return;
+
+            // 현재 페이지 비활성화
+            const currentPageEl = document.querySelector(`.page[data-page="${currentPage}"]`);
+            if (currentPageEl) {
+                currentPageEl.classList.remove('active');
+            }
+
+            // 새 페이지 활성화
+            currentPage = pageNum;
+            const newPageEl = document.querySelector(`.page[data-page="${currentPage}"]`);
+            if (newPageEl) {
+                newPageEl.classList.add('active');
+            }
+
+            // UI 업데이트
+            updateNavigation();
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                goToPage(currentPage + 1);
+            }
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                goToPage(currentPage - 1);
+            }
+        }
+
+        function updateNavigation() {
+            // 페이지 표시 업데이트
+            document.getElementById('currentPageTop').textContent = currentPage;
+            document.getElementById('currentPageBottom').textContent = currentPage;
+
+            // 화살표 비활성화 처리
+            const navUpTop = document.getElementById('navUpTop');
+            const navDownTop = document.getElementById('navDownTop');
+            const navUpBottom = document.getElementById('navUpBottom');
+            const navDownBottom = document.getElementById('navDownBottom');
+
+            navUpTop.classList.toggle('disabled', currentPage === 1);
+            navDownTop.classList.toggle('disabled', currentPage === totalPages);
+            navUpBottom.classList.toggle('disabled', currentPage === 1);
+            navDownBottom.classList.toggle('disabled', currentPage === totalPages);
+
+            // 진행률 바 업데이트
+            const progress = (currentPage / totalPages) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        // 터치 스와이프 이벤트
+        document.addEventListener('touchstart', (e) => {
+            touchStartY = e.changedTouches[0].screenY;
+        }, false);
+
+        document.addEventListener('touchend', (e) => {
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        }, false);
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = touchStartY - touchEndY;
+
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    // 위로 스와이프 = 다음 페이지
+                    nextPage();
+                } else {
+                    // 아래로 스와이프 = 이전 페이지
+                    previousPage();
+                }
+            }
+        }
+
+        // 키보드 네비게이션
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') {
+                previousPage();
+            } else if (e.key === 'ArrowDown') {
+                nextPage();
+            }
+        });
+
+        // CTA 함수
+        function toggleInput() {
+            const inputWrapper = document.getElementById('inputWrapper');
+            const successMessage = document.getElementById('successMessage');
+            inputWrapper.classList.add('active');
+            successMessage.classList.remove('active');
+        }
+
+        function saveProblem() {
+            const text = document.getElementById('problemText').value;
+            if (text.trim()) {
+                const timestamp = new Date().toLocaleString('ko-KR');
+                const record = {
+                    problem: text,
+                    date: timestamp
+                };
+                localStorage.setItem('myProblem_' + Date.now(), JSON.stringify(record));
+
+                document.getElementById('inputWrapper').classList.remove('active');
+                document.getElementById('successMessage').classList.add('active');
+
+                setTimeout(() => {
+                    document.getElementById('problemText').value = '';
+                }, 3000);
+            }
+        }
+
+        // 초기화
+        updateNavigation();
+    </script>
+</body>
+</html>
